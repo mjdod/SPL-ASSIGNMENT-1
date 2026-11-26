@@ -1,4 +1,5 @@
 #include "MemoryBlock.h"
+#include <stdexcept>
 
 MemoryBlock::MemoryBlock(size_t size): size(size), refCount(0) {
     data = new int[size];
@@ -6,22 +7,22 @@ MemoryBlock::MemoryBlock(size_t size): size(size), refCount(0) {
         data[i] = 0;
     }
 }
-MemoryBlock::readFromBlock(std::size_t offset) const {
+int MemoryBlock::readFromBlock(std::size_t offset) const {
     if (offset >= size) {
         throw std::out_of_range("Offset is out of bounds");
     }
     return data[offset];
 }
-MemoryBlock::writeToBlock(std::size_t offset, int value) {
+void MemoryBlock::writeToBlock(std::size_t offset, int value) {
     if (offset >= size) {
         throw std::out_of_range("Offset is out of bounds");
     }
     data[offset] = value;
 }
-MemoryBlock::acquire() {
+void MemoryBlock::acquire() {
     refCount++;
 }
-MemoryBlock::release() {
+IdleAction MemoryBlock::release() {
     refCount--;
     if (refCount == 0) {
         return onLastRelease();

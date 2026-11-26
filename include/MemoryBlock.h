@@ -12,6 +12,12 @@ protected:
     int* data;
 public:
     MemoryBlock(size_t size);
+    //our new functions to follow the rule of 5
+    MemoryBlock(const MemoryBlock& other);
+    MemoryBlock& operator=(const MemoryBlock& other);
+    MemoryBlock(MemoryBlock&& other) noexcept;
+    MemoryBlock& operator=(MemoryBlock&& other) noexcept;
+    //end of rule of 5
     virtual IdleAction onLastRelease() const = 0;
     virtual MemoryBlock* clone() const = 0;
     int readFromBlock(std::size_t offset) const;
