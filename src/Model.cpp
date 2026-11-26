@@ -1,6 +1,10 @@
 #include <cstdint>
 #include "Model.h"
-#include "GPU.h"
+#include "GPU.h"    
+
+Model::Model(const std::string& id, std::size_t embeddingSize): modelId(id), embeddingSize(embeddingSize)
+{
+}
 std::uint64_t Model::mixByte(std::uint64_t state, unsigned char byte) const {
     state ^= byte;
     state *= 1099511628211ULL;
@@ -47,4 +51,28 @@ size_t offset) const {
         value ^= value >> 31;
         gpu.writeToBlock(slot, offset + i, static_cast<int>(value % 2001ULL) - 1000);
     }
+
+}
+std::vector<std::string> Model::tokenizer(std::string text) const
+{
+    
+    std::vector<std::string> token;
+    std::string newText;
+    for(char c : text)
+    {
+        if(c == ' ' && !newText.empty())
+        {
+            token.push_back(newText);
+            newText = "";
+        }
+        if((c >='A' && c<='Z')||  (c>='a' && c<= 'z') || (c>= '0' && c<= '9') )
+        {
+            newText += c;
+        }
+    }
+    if(newText != "")
+    {
+        token.push_back(newText);
+    }
+    return token;
 }
