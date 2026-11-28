@@ -37,9 +37,11 @@ class GenerativeRequest: public Request{
 private:
     std::string scriptedOutput;
     std::size_t maxOutputTokens;
+    std::vector<std::string> outputTokens;
+    std::size_t processedTokens;
 public:
-    GenerativeRequest(int id, const Model& model, int admissionCycle, std::string prompt, std::string scriptedOutput,
-    std::size_t maxOutputTokens);
+    GenerativeRequest(int id, const Model& model, int admissionCycle, std::string prompt, std::string scriptedOutput,std::size_t maxOutputTokens);
+    
     std::size_t getMaxNeededMemory() const override;
     std::size_t getNeededMemory(const GPU& gpu) const override;
     std::vector<std::string> getCacheableTokens() const override;
@@ -53,6 +55,9 @@ public:
 };
 
 class EmbeddingRequest: public Request{
+    private:
+    std::size_t processedTokens;
+    std::vector<int> embeddingSum;
 public:
     EmbeddingRequest(int id, const Model& model, int admissionCycle, std::string prompt);
     std::size_t getMaxNeededMemory() const override;
