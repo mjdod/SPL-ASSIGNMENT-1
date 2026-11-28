@@ -182,7 +182,6 @@ std::size_t GPU::allocateBlock(const Request& request)
                 blockModelIds[i].clear();
 
                 ++evicted;
-                request.allocateOneBlock(*this,i);
                 slot = i;
                 break;
             }
@@ -204,12 +203,12 @@ std::size_t GPU::allocateBlock(const Request& request)
     }
     return slot;
 }
-void GPU::addMemoryBlock(const GenerativeRequest& request, std::size_t slot)
+void GPU::addMemoryBlock(const GenerativeRequest&, std::size_t slot)
 {
     memory[slot] = new KVBlock(blockSize);
 }
 
-void GPU::addMemoryBlock(const EmbeddingRequest& request, std::size_t slot)
+void GPU::addMemoryBlock(const EmbeddingRequest&, std::size_t slot)
 {
     memory[slot] = new EmbeddingWorkspace(blockSize);
 }
