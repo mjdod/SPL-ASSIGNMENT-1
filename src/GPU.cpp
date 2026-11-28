@@ -4,7 +4,7 @@
 #include "MemoryBlock.h"
 #include <stdexcept>
 //constructer (still need to implment rule of 5)
-GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),reservations(),prefixKeys(blocksNum),blockModelIds(blocksNum),hasPrefix(blocksNum, false)
+GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),reservations(),prefixKeys(blocksNum),blockModelIds(blocksNum),hasPrefix(blocksNum, false),evicted(0)
 {
 }
 
@@ -28,6 +28,7 @@ std::size_t GPU::getBlocksForMemory(std::size_t memory) const
 {
     return (memory + blockSize - 1) / blockSize;
 }
+//reservation logic and dealing with requests
 void GPU::reserve(std::size_t n, const Request& request)
 {
     for (auto& r : reservations) {
@@ -82,7 +83,6 @@ std::size_t GPU::allocateBlock(const Request& request)
     {
         if(memory[i] == nullptr)
         {
-            request.allocateOneBlock(*this,i);
             slot = i;
             break;
         }
@@ -95,6 +95,12 @@ std::size_t GPU::allocateBlock(const Request& request)
             {
                 delete memory[i];
                 memory[i] = nullptr;
+
+                hasPrefix[i] = false;
+                prefixKeys[i].clear();
+                blockModelIds[i].clear();
+
+                ++evicted;
                 request.allocateOneBlock(*this,i);
                 slot = i;
                 break;
@@ -105,6 +111,7 @@ std::size_t GPU::allocateBlock(const Request& request)
     {
         throw std::logic_error("no available slots");
     }
+    request.allocateOneBlock(*this, slot);
     for(auto& r : reservations)
     {
         if(r.first == &request)
@@ -125,6 +132,7 @@ void GPU::addMemoryBlock(const EmbeddingRequest& request, std::size_t slot)
 {
     memory[slot] = new EmbeddingWorkspace(blockSize);
 }
+//prefix logic
 void GPU::assignPrefixToBlock(std::size_t block,const std::vector<std::string>& prefixTokens, const std::string& modelId)
 {
     for (std::size_t i = 0; i < blocksNum; ++i)
@@ -163,4 +171,5 @@ PrefixMatch GPU::findLongestCachedPrefix(const std::string& modelId,std::size_t 
     }
     return result;
 }
+
 

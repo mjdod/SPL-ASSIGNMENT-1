@@ -42,6 +42,7 @@ private:
     std::vector<MemoryBlock*> memory;
     std::vector<std::pair<const Request*, std::size_t>> reservations;
     //for prefix matching
+    std::size_t evicted;
     std::vector<std::vector<std::string>> prefixKeys;
     std::vector<std::string> blockModelIds;
     std::vector<bool> hasPrefix;
