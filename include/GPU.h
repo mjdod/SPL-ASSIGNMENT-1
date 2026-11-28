@@ -33,6 +33,7 @@ public:
 private:
     std::size_t blocksNum;
     std::size_t blockSize;
+    std::size_t reserved;
     std::vector<MemoryBlock*> memory;
 };
 
