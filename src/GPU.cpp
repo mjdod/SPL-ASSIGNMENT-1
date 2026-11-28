@@ -138,3 +138,29 @@ void GPU::assignPrefixToBlock(std::size_t block,const std::vector<std::string>& 
     prefixKeys[block] = prefixTokens;
     hasPrefix[block] = true;
 }
+PrefixMatch GPU::findLongestCachedPrefix(const std::string& modelId,std::size_t embeddingSize, const std::vector<std::string>& promptTokens) const
+{
+    PrefixMatch result{0, {}};
+    std::size_t tokensPerBlock = blockSize / embeddingSize;
+    for (std::size_t end = tokensPerBlock; end <= promptTokens.size();end += tokensPerBlock)
+    {
+        std::vector<std::string> prefix(promptTokens.begin(),promptTokens.begin() + end);
+        bool found = false;
+        for (std::size_t i = 0; i < blocksNum; ++i)
+        {
+            if (memory[i] != nullptr && hasPrefix[i] && blockModelIds[i] == modelId && prefixKeys[i] == prefix)
+            {
+                result.blockIds.push_back(i);
+                result.matchedTokens = end;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            break;
+        }
+    }
+    return result;
+}
+
