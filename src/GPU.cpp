@@ -15,7 +15,6 @@ GPU::~GPU()
         delete block;
     }
 }
-
 //copy constructor
 GPU::GPU(const GPU& other): blocksNum(other.blocksNum),blockSize(other.blockSize),memory(other.blocksNum, nullptr),reserved(other.reserved),reservations(other.reservations),prefixKeys(other.prefixKeys),blockModelIds(other.blockModelIds),hasPrefix(other.hasPrefix),evicted(other.evicted)
 {
@@ -88,6 +87,8 @@ GPU& GPU::operator=(GPU&& other) noexcept
     }
     return *this;
 }
+
+
 
 
 //the functions required in implementation O-O
@@ -251,6 +252,85 @@ PrefixMatch GPU::findLongestCachedPrefix(const std::string& modelId,std::size_t 
     }
     return result;
 }
+void GPU::copyMemoryFromOtherGPU(const GPU& other, const std::vector<std::size_t>& blocks)
+{
+    if (this == &other)
+    {
+        return;
+    }
+    std::vector<bool> protectedSlots(blocksNum, false);
+    for (std::size_t sourceSlot : blocks)
+    {
+        if (sourceSlot >= other.blocksNum || other.memory[sourceSlot] == nullptr || !other.hasPrefix[sourceSlot])
+        {
+            throw std::logic_error("invalid source cache block");
+        }
+        for (std::size_t i = 0; i < blocksNum; ++i)
+        {
+            if (memory[i] != nullptr &&
+                hasPrefix[i] &&
+                blockModelIds[i] == other.blockModelIds[sourceSlot] &&
+                prefixKeys[i] == other.prefixKeys[sourceSlot])
+            {
+                protectedSlots[i] = true;
+            }
+        }
+    }
+    for (std::size_t sourceSlot : blocks)
+    {
+        bool alreadyExists = false;
+        for (std::size_t i = 0; i < blocksNum; ++i)
+        {
+            if (memory[i] != nullptr && hasPrefix[i] && blockModelIds[i] == other.blockModelIds[sourceSlot] && prefixKeys[i] == other.prefixKeys[sourceSlot])
+            {
+                alreadyExists = true;
+                break;
+            }
+        }
+        if (alreadyExists)
+        {
+            continue;
+        }
+        std::size_t slot = blocksNum;
+        for (std::size_t i = 0; i < blocksNum; ++i)
+        {
+            if (memory[i] == nullptr)
+            {
+                slot = i;
+                break;
+            }
+        }
+        if (slot == blocksNum)
+        {
+            for (std::size_t i = 0; i < blocksNum; ++i)
+            {
+                if (memory[i] != nullptr &&
+                    memory[i]->getRefCount() == 0 &&
+                    !protectedSlots[i])
+                {
+                    slot = i;
+                    break;
+                }
+            }
+        }
+        if (slot == blocksNum)
+        {
+            throw std::logic_error("no available slot for copying");
+        }
+        MemoryBlock* copiedBlock = other.memory[sourceSlot]->clone();
+        if (memory[slot] != nullptr)
+        {
+            delete memory[slot];
+            ++evicted;
+        }
+        memory[slot] = copiedBlock;
+        hasPrefix[slot] = true;
+        prefixKeys[slot] = other.prefixKeys[sourceSlot];
+        blockModelIds[slot] = other.blockModelIds[sourceSlot];
+        protectedSlots[slot] = true;
+    }
+}
+
 //reading and writing for block
 void GPU::acquire(std::size_t slot)
 {
