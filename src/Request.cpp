@@ -232,9 +232,6 @@ bool EmbeddingRequest::finished() const {
     return processedTokens >= tokens.size();
 }
 
-bool EmbeddingRequest::finished() const {
-   return processedTokens >= tokens.size();
-}
 void EmbeddingRequest::reserveMemory(GPU& gpu) {
 
     reservedBlocks = gpu.getBlocksForMemory(2 * model.getEmbeddingSize());
