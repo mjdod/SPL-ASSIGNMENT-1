@@ -327,10 +327,30 @@ void GPU::copyMemoryFromOtherGPU(const GPU& other, const std::vector<std::size_t
         hasPrefix[slot] = true;
         prefixKeys[slot] = other.prefixKeys[sourceSlot];
         blockModelIds[slot] = other.blockModelIds[sourceSlot];
+
         protectedSlots[slot] = true;
     }
 }
 
+void GPU::release(std::size_t slot)
+{
+    if (slot >= blocksNum || memory[slot] == nullptr)
+    {
+        throw std::out_of_range("invalid slot");
+    }
+    IdleAction action = memory[slot]->release();
+    if (memory[slot]->getRefCount() == 0)
+    {
+        if (action == IdleAction::Destroy || !hasPrefix[slot])
+        {
+            delete memory[slot];
+            memory[slot] = nullptr;
+            hasPrefix[slot] = false;
+            prefixKeys[slot].clear();
+            blockModelIds[slot].clear();
+        }
+    }
+}
 //reading and writing for block
 void GPU::acquire(std::size_t slot)
 {
