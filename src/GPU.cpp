@@ -116,3 +116,12 @@ std::size_t GPU::allocateBlock(const Request& request)
     }
     return slot;
 }
+void GPU::addMemoryBlock(const GenerativeRequest& request, std::size_t slot)
+{
+    memory[slot] = new KVBlock(blockSize);
+}
+
+void GPU::addMemoryBlock(const EmbeddingRequest& request, std::size_t slot)
+{
+    memory[slot] = new EmbeddingWorkspace(blockSize);
+}
