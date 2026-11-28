@@ -1,10 +1,10 @@
 #include <iostream>
-#include <GPU.h>
-#include <MemoryBlock.h>
-#include <Request.h>
+#include "GPU.h"
+#include "Request.h"
+#include "MemoryBlock.h"
 #include <stdexcept>
 //constructer (still need to implment rule of 5)
-GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),      reservations()
+GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),reservations(),prefixKeys(blocksNum),blockModelIds(blocksNum),hasPrefix(blocksNum, false)
 {
 }
 
@@ -124,4 +124,17 @@ void GPU::addMemoryBlock(const GenerativeRequest& request, std::size_t slot)
 void GPU::addMemoryBlock(const EmbeddingRequest& request, std::size_t slot)
 {
     memory[slot] = new EmbeddingWorkspace(blockSize);
+}
+void GPU::assignPrefixToBlock(std::size_t block,const std::vector<std::string>& prefixTokens, const std::string& modelId)
+{
+    for (std::size_t i = 0; i < blocksNum; ++i)
+    {
+        if (i != block && hasPrefix[i] && blockModelIds[i] == modelId && prefixKeys[i] == prefixTokens)
+        {
+            return;
+        }
+    }
+    blockModelIds[block] = modelId;
+    prefixKeys[block] = prefixTokens;
+    hasPrefix[block] = true;
 }

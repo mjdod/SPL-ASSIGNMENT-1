@@ -4,6 +4,11 @@
 #include <string>
 #include <cstddef>
 #include <vector>
+#include <utility>
+class Request;
+class GenerativeRequest;
+class EmbeddingRequest;
+class MemoryBlock;
 
 struct PrefixMatch {
     std::size_t matchedTokens;
@@ -36,6 +41,10 @@ private:
     std::size_t reserved;
     std::vector<MemoryBlock*> memory;
     std::vector<std::pair<const Request*, std::size_t>> reservations;
+    //for prefix matching
+    std::vector<std::vector<std::string>> prefixKeys;
+    std::vector<std::string> blockModelIds;
+    std::vector<bool> hasPrefix;
 };
 
 #endif

@@ -11,6 +11,7 @@ protected:
     int refCount;
     int* data;
 public:
+    virtual ~MemoryBlock();
     MemoryBlock(size_t size);
     //our new functions to follow the rule of 5
     MemoryBlock(const MemoryBlock& other);
