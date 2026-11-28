@@ -4,6 +4,11 @@
 #include <string>
 #include <cstddef>
 #include <vector>
+#include <utility>
+class Request;
+class GenerativeRequest;
+class EmbeddingRequest;
+class MemoryBlock;
 
 struct PrefixMatch {
     std::size_t matchedTokens;
@@ -14,6 +19,13 @@ class MemoryBlock;
 
 class GPU{
 public:
+    //rule of five
+    ~GPU();
+    GPU(const GPU& other);
+    GPU& operator=(const GPU& other);
+    GPU(GPU&& other) noexcept;
+    GPU& operator=(GPU&& other) noexcept;
+    //end of rule of five
     GPU(std::size_t blocksNum, std::size_t blockSize);
     std::size_t availableSlots() const;
     std::size_t getBlocksForMemory(std::size_t memory) const;
@@ -33,7 +45,14 @@ public:
 private:
     std::size_t blocksNum;
     std::size_t blockSize;
+    std::size_t reserved;
     std::vector<MemoryBlock*> memory;
+    std::vector<std::pair<const Request*, std::size_t>> reservations;
+    //for prefix matching
+    std::size_t evicted;
+    std::vector<std::vector<std::string>> prefixKeys;
+    std::vector<std::string> blockModelIds;
+    std::vector<bool> hasPrefix;
 };
 
 #endif
