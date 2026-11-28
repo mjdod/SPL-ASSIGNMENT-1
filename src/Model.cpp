@@ -76,3 +76,10 @@ std::vector<std::string> Model::tokenizer(std::string text) const
     }
     return token;
 }
+
+const std::string& Model::getId() const {
+    return modelId;
+}
+std::size_t Model::getEmbeddingSize() const {
+    return embeddingSize;
+}
