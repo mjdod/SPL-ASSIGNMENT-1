@@ -28,3 +28,15 @@ std::size_t GPU::getBlocksForMemory(std::size_t memory) const
     return (memory + blockSize - 1) / blockSize;
 }
 void GPU::reserve(std::size_t n, const Request& request)
+{
+    for (auto& entry : reservations) {
+        if (entry.first == &request) {
+            entry.second += n;
+            reserved += n;
+            return;
+        }
+    }
+
+    reservations.push_back({&request, n});
+    totalReserved += n;
+}

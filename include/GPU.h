@@ -35,6 +35,7 @@ private:
     std::size_t blockSize;
     std::size_t reserved;
     std::vector<MemoryBlock*> memory;
+    std::vector<std::pair<const Request*, std::size_t>> reservations;
 };
 
 #endif
