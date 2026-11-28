@@ -376,3 +376,8 @@ void GPU::writeToBlock(std::size_t blockId,std::size_t offset, int value)
     }
     memory[blockId]->writeToBlock(offset, value);
 }
+//getters
+std::size_t GPU::getBlockSize() const
+{
+    return blockSize;
+}
