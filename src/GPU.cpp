@@ -3,11 +3,91 @@
 #include "Request.h"
 #include "MemoryBlock.h"
 #include <stdexcept>
-//constructer (still need to implment rule of 5)
+//constructer and rule of 5
 GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),reservations(),prefixKeys(blocksNum),blockModelIds(blocksNum),hasPrefix(blocksNum, false),evicted(0)
 {
 }
+//Destructor
+GPU::~GPU()
+{
+    for (MemoryBlock* block : memory)
+    {
+        delete block;
+    }
+}
 
+//copy constructor
+GPU::GPU(const GPU& other): blocksNum(other.blocksNum),blockSize(other.blockSize),memory(other.blocksNum, nullptr),reserved(other.reserved),reservations(other.reservations),prefixKeys(other.prefixKeys),blockModelIds(other.blockModelIds),hasPrefix(other.hasPrefix),evicted(other.evicted)
+{
+    try
+    {
+        for (std::size_t i = 0; i < blocksNum; ++i)
+        {
+            if (other.memory[i] != nullptr)
+            {
+                memory[i] = other.memory[i]->clone();
+                std::size_t count = other.memory[i]->getRefCount();
+
+                for (std::size_t j = 0; j < count; ++j)
+                {
+                    memory[i]->acquire();
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        for (MemoryBlock* block : memory)
+        {
+            delete block;
+        }
+        throw;
+    }
+}
+
+//copy assignment
+GPU& GPU::operator=(const GPU& other)
+{
+    if (this != &other)
+    {
+        GPU copy(other);
+        *this = std::move(copy);
+    }
+    return *this;
+}
+//move constructor
+GPU::GPU(GPU&& other) noexcept: blocksNum(other.blocksNum),blockSize(other.blockSize),memory(std::move(other.memory)),reserved(other.reserved),reservations(std::move(other.reservations)),prefixKeys(std::move(other.prefixKeys)),blockModelIds(std::move(other.blockModelIds)),hasPrefix(std::move(other.hasPrefix)),evicted(other.evicted)
+{
+    other.blocksNum = 0;
+    other.blockSize = 0;
+    other.reserved = 0;
+    other.evicted = 0;
+}
+//move assignment
+GPU& GPU::operator=(GPU&& other) noexcept
+{
+    if (this != &other)
+    {
+        for (MemoryBlock* block : memory)
+        {
+            delete block;
+        }
+        blocksNum = other.blocksNum;
+        blockSize = other.blockSize;
+        memory = std::move(other.memory);
+        reserved = other.reserved;
+        reservations = std::move(other.reservations);
+        prefixKeys = std::move(other.prefixKeys);
+        blockModelIds = std::move(other.blockModelIds);
+        hasPrefix = std::move(other.hasPrefix);
+        evicted = other.evicted;
+        other.blocksNum = 0;
+        other.blockSize = 0;
+        other.reserved = 0;
+        other.evicted = 0;
+    }
+    return *this;
+}
 
 
 //the functions required in implementation O-O
@@ -171,5 +251,29 @@ PrefixMatch GPU::findLongestCachedPrefix(const std::string& modelId,std::size_t 
     }
     return result;
 }
+//reading and writing for block
+void GPU::acquire(std::size_t slot)
+{
+    if (slot >= blocksNum || memory[slot] == nullptr)
+    {
+        throw std::out_of_range("invalid slot");
+    }
+    memory[slot]->acquire();
+}
+int GPU::readFromBlock(std::size_t blockId, std::size_t offset) const
+{
+    if (blockId >= blocksNum || memory[blockId] == nullptr)
+    {
+        throw std::out_of_range("invalid block");
+    }
+    return memory[blockId]->readFromBlock(offset);
+}
 
-
+void GPU::writeToBlock(std::size_t blockId,std::size_t offset, int value)
+{
+    if (blockId >= blocksNum || memory[blockId] == nullptr)
+    {
+        throw std::out_of_range("invalid block");
+    }
+    memory[blockId]->writeToBlock(offset, value);
+}
