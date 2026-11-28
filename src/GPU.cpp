@@ -4,7 +4,7 @@
 #include <Request.h>
 #include <stdexcept>
 //constructer (still need to implment rule of 5)
-GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0)
+GPU::GPU(std::size_t blocksNum, std::size_t blockSize): blocksNum(blocksNum), blockSize(blockSize), memory(blocksNum,nullptr), reserved(0),      reservations()
 {
 }
 
@@ -60,4 +60,59 @@ void GPU::unreserve(std::size_t n, const Request& request)
     {
         throw std::logic_error("request has nothing reserved");
     }
+}
+
+std::size_t GPU::allocateBlock(const Request& request)
+{
+    size_t slot = blocksNum;
+    bool hasReservation = false;
+    for (const auto& r : reservations)
+    {
+        if (r.first == &request && r.second > 0)
+        {
+            hasReservation = true;
+            break;
+        }
+    }
+    if (!hasReservation)
+    {
+        throw std::logic_error("request has no reservation");
+    }
+    for(std::size_t i = 0; i< blocksNum; ++i)
+    {
+        if(memory[i] == nullptr)
+        {
+            request.allocateOneBlock(*this,i);
+            slot = i;
+            break;
+        }
+    }
+    if(slot == blocksNum)
+    {
+        for(std::size_t i = 0; i<blocksNum; ++i)
+        {
+            if(memory[i] != nullptr && memory[i]->getRefCount() == 0 )
+            {
+                delete memory[i];
+                memory[i] = nullptr;
+                request.allocateOneBlock(*this,i);
+                slot = i;
+                break;
+            }
+        }
+    }
+    if (slot == blocksNum)
+    {
+        throw std::logic_error("no available slots");
+    }
+    for(auto& r : reservations)
+    {
+        if(r.first == &request)
+        {
+            r.second--;
+            reserved--;
+            break;
+        }
+    }
+    return slot;
 }
